@@ -4,6 +4,15 @@ const jwt = require("jsonwebtoken");
 const secrets = require("../config/secrets.js");
 const UsersDb = require("../database/UsersModel.js");
 
+const checkAuth = (req, res, next) => {
+  let session = req.session.loggedIn;
+  if (session) {
+    next();
+  } else {
+    res.status(400).json({ success: false, message: "You shall not pass!" });
+  }
+};
+
 router.post("/register", (req, res) => {
   // implement registration
 
@@ -27,13 +36,14 @@ router.post("/register", (req, res) => {
 
 router.post("/login", (req, res) => {
   // implement login
-
+  req.session.loggedIn = false;
   let { username, password } = req.body;
 
   UsersDb.findBy({ username })
     .then(user => {
       if (user && bcrypt.compareSync(password, user.password)) {
         const token = generateToken(user);
+        req.session.loggedIn = true;
 
         res
           .status(200)
