@@ -20,8 +20,8 @@ router.post("/register", (req, res) => {
   let hash = bcrypt.hashSync(user.password, 12);
 
   user.password = hash;
-
-  if (user.password) {
+  console.log(user);
+  if (user) {
     UsersDb.insert(user)
       .then(saved => {
         res.status(201).json({ success: true, saved });
@@ -38,16 +38,17 @@ router.post("/login", (req, res) => {
   // implement login
   req.session.loggedIn = false;
   let { username, password } = req.body;
-
+  // console.log(generateToken(req.body));
   UsersDb.findBy({ username })
     .then(user => {
+      // console.log("user before if", user, password);
+      console.log(user && bcrypt.compareSync(password, user.password));
       if (user && bcrypt.compareSync(password, user.password)) {
-        const token = generateToken(user);
+        // const token = generateToken(user);
         req.session.loggedIn = true;
-
         res
           .status(200)
-          .json({ success: true, message: `Welcome ${username}!`, token });
+          .json({ success: true, message: `Welcome ${username}!` });
       } else {
         res
           .status(401)
@@ -59,15 +60,17 @@ router.post("/login", (req, res) => {
 
 function generateToken(user) {
   const payload = {
-    subject: user.id,
+    subject: user.id, // sub in payload is what the token is about
     username: user.username
+    // ...otherData
   };
 
   const options = {
-    expiresIn: "1d"
+    expiresIn: "1d" // show other available options in the library's documentation
   };
 
-  return jwt.sign(payload, secrets.jwtSecret, options);
+  // extract the secret away so it can be required and used where needed
+  return jwt.sign(payload, secrets.jwtSecret, options); // this method is synchronous
 }
 
 module.exports = router;
